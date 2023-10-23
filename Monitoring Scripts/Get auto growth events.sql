@@ -1,6 +1,10 @@
 USE [master]
 GO
 
+DECLARE @esc_char char(1) 
+SELECT @esc_char = IIF(host_platform = 'Linux','//','\')  FROM sys.dm_os_host_info
+
+
 IF (SELECT CONVERT(INT,value_in_use) FROM sys.configurations WHERE NAME = 'default trace enabled') = 1
 BEGIN 
 	DECLARE @curr_tracefilename VARCHAR(500);
@@ -9,9 +13,9 @@ BEGIN
 
 	SELECT @curr_tracefilename = path FROM sys.traces WHERE is_default = 1;
 	SET @curr_tracefilename = REVERSE(@curr_tracefilename);
-	SELECT @indx  = PATINDEX('%\%', @curr_tracefilename) ;
+	SELECT @indx  = CHARINDEX(@esc_char, @curr_tracefilename) ;
 	SET @curr_tracefilename = REVERSE(@curr_tracefilename) ;
-	SET @base_tracefilename = LEFT( @curr_tracefilename,LEN(@curr_tracefilename) - @indx) + '\log.trc'; 
+	SET @base_tracefilename = LEFT( @curr_tracefilename,LEN(@curr_tracefilename) - @indx) + @esc_char + 'log.trc'; 
 	
 	SELECT
 		--(DENSE_RANK() OVER (ORDER BY StartTime DESC))%2 AS l1,
